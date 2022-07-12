@@ -17,29 +17,26 @@ var (
 
 func main() {
 	initConfig()
-	log.Info().Msg("QuillSecure Leader booting...")
+	deviceID := uint8(viper.GetInt("deviceID"))
+	log.Info().Uint8("deviceID", deviceID).Msg("QuillSecure Node booting...")
+	closeHandler()
 
-	net := LeaderNet{
-		host: viper.GetString("leaderHost"),
-		port: viper.GetInt("leaderPort"),
+	sc := SensorCollection{
+		deviceID: deviceID,
 	}
-	closeHandler(net)
+	// find and activate all sensor connected to device
+	sc.RegisterSensors()
+	log.Info().Msg("QuillSecure Node booted")
 
-	log.Info().Msg("QuillSecure Leader booted")
-
-	if err := net.StartListening(); err != nil {
-		net.Close()
-		log.Fatal().Err(err).Msg("Error in listener")
-	}
+	sc.Poll()
 }
 
-func closeHandler(net LeaderNet) {
+func closeHandler() {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		net.Close()
-		log.Info().Msg("QuillSecure Leader shutting down due to interrupt")
+		log.Info().Msg("QuillSecure Node shutting down due to interrupt")
 
 		os.Exit(0)
 	}()
@@ -61,7 +58,7 @@ func initConfig() {
 		// Search config in home directory with name "quillsecure.yaml"
 		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
-		viper.AddConfigPath("leader")
+		viper.AddConfigPath("node")
 		viper.SetConfigName("quillsecure")
 	}
 

@@ -6,8 +6,9 @@ import (
 )
 
 type Packet struct {
-	UID uint64
-	Typ uint8
+	UID  uint8
+	Typ  uint8
+	Data []byte
 }
 
 func (p Packet) Encode(w io.Writer) error {
