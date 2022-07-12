@@ -1,0 +1,3 @@
+prettyLogging: true
+leaderHost: localhost
+leaderPort: 5530
