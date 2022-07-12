@@ -30,6 +30,7 @@ func main() {
 	log.Info().Msg("QuillSecure booted")
 
 	if err := net.StartListening(); err != nil {
+		net.Close()
 		log.Fatal().Err(err).Msg("Error in listener")
 	}
 }

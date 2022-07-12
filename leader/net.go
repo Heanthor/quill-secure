@@ -13,6 +13,8 @@ const (
 type LeaderNet struct {
 	host string
 	port int
+
+	listener net.Listener
 }
 
 func (l *LeaderNet) StartListening() error {
@@ -21,8 +23,7 @@ func (l *LeaderNet) StartListening() error {
 		log.Err(err).Msg("Error starting listener")
 		return err
 	}
-	// Close the listener when the application closes.
-	defer listener.Close()
+
 	log.Info().Str("host", l.host).Int("port", l.port).Msg("Started listening")
 	for {
 		// Listen for an incoming connection.
@@ -38,8 +39,12 @@ func (l *LeaderNet) StartListening() error {
 
 func (l *LeaderNet) handleRequest(conn net.Conn) {
 	log.Info().Msg("Handling request")
+
 }
 
 func (l *LeaderNet) Close() {
-
+	log.Debug().Msg("Close listener")
+	if l.listener != nil {
+		l.listener.Close()
+	}
 }
