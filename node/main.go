@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
@@ -15,13 +16,28 @@ var (
 	cfgFile string
 )
 
+var (
+	overrideDeviceID int
+)
+
+func init() {
+	flag.IntVar(&overrideDeviceID, "deviceID", 0, "Override device ID present in config")
+}
+
 func main() {
+	flag.Parse()
+
 	initConfig()
 	deviceID := uint8(viper.GetInt("deviceID"))
+	if overrideDeviceID != 0 {
+		deviceID = uint8(overrideDeviceID)
+	}
+
 	log.Info().Uint8("deviceID", deviceID).Msg("QuillSecure Node booting...")
-	closeHandler()
 
 	sc := NewSensorCollection(deviceID, viper.GetString("leaderHost"), viper.GetInt("leaderPort"), viper.GetInt("pingIntervalSecs"))
+	setCloseHandler(&sc)
+
 	// find and activate all sensor connected to device
 	sc.RegisterSensors()
 	sc.startPing()
@@ -30,13 +46,13 @@ func main() {
 	sc.Poll()
 }
 
-func closeHandler() {
+func setCloseHandler(sc *SensorCollection) {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
 		log.Info().Msg("QuillSecure Node shutting down due to interrupt")
-
+		sc.StopPolling()
 		os.Exit(0)
 	}()
 }

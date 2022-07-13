@@ -49,7 +49,7 @@ func (l *LeaderNet) handleRequest(conn net.Conn) {
 	case 0:
 		log.Debug().Uint8("deviceID", p.UID).Msg("ping")
 	case sensor.TypeFake:
-		log.Info().Msg("fake sensor readout")
+		log.Info().Uint8("deviceID", p.UID).Msg("fake sensor readout")
 	}
 }
 
