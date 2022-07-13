@@ -2,6 +2,7 @@ package main
 
 import (
 	mynet "github.com/Heanthor/quill-secure/net"
+	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/rs/zerolog/log"
 	"net"
 	"strconv"
@@ -38,8 +39,18 @@ func (l *LeaderNet) StartListening() error {
 }
 
 func (l *LeaderNet) handleRequest(conn net.Conn) {
-	log.Info().Msg("Handling request")
+	p, err := mynet.ReadPacket(conn)
+	if err != nil {
+		log.Err(err).Msg("Error decoding packet")
+		return
+	}
 
+	switch p.Typ {
+	case 0:
+		log.Debug().Uint8("deviceID", p.UID).Msg("ping")
+	case sensor.TypeFake:
+		log.Info().Msg("fake sensor readout")
+	}
 }
 
 func (l *LeaderNet) Close() {

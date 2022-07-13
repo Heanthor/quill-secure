@@ -4,6 +4,10 @@ type FakeSensor struct {
 	Buf string
 }
 
+func (f *FakeSensor) PollRate() int64 {
+	return 5000
+}
+
 func (f *FakeSensor) Type() uint8 {
 	return TypeFake
 }

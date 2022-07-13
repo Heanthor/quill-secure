@@ -21,3 +21,15 @@ func (p Packet) Encode(w io.Writer) error {
 
 	return e.Encode(p)
 }
+
+// ReadPacket attempts to stream data off the reader and convert it into a Packet
+func ReadPacket(r io.Reader) (*Packet, error) {
+	var p Packet
+	err := gob.NewDecoder(r).Decode(&p)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &p, nil
+}
