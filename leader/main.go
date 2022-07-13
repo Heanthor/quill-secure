@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	net2 "github.com/Heanthor/quill-secure/net"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -20,8 +21,10 @@ func main() {
 	log.Info().Msg("QuillSecure Leader booting...")
 
 	net := LeaderNet{
-		host: viper.GetString("leaderHost"),
-		port: viper.GetInt("leaderPort"),
+		dest: net2.Dest{
+			Host: viper.GetString("leaderHost"),
+			Port: viper.GetInt("leaderPort"),
+		},
 	}
 	closeHandler(net)
 

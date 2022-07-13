@@ -1,6 +1,7 @@
 package main
 
 import (
+	mynet "github.com/Heanthor/quill-secure/net"
 	"github.com/rs/zerolog/log"
 	"net"
 	"strconv"
@@ -11,20 +12,19 @@ const (
 )
 
 type LeaderNet struct {
-	host string
-	port int
+	dest mynet.Dest
 
 	listener net.Listener
 }
 
 func (l *LeaderNet) StartListening() error {
-	listener, err := net.Listen(ConnType, l.host+":"+strconv.Itoa(l.port))
+	listener, err := net.Listen(ConnType, l.dest.Host+":"+strconv.Itoa(l.dest.Port))
 	if err != nil {
 		log.Err(err).Msg("Error starting listener")
 		return err
 	}
 
-	log.Info().Str("host", l.host).Int("port", l.port).Msg("Started listening")
+	log.Info().Str("host", l.dest.Host).Int("port", l.dest.Port).Msg("Started listening")
 	for {
 		// Listen for an incoming connection.
 		conn, err := listener.Accept()

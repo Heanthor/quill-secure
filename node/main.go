@@ -21,11 +21,10 @@ func main() {
 	log.Info().Uint8("deviceID", deviceID).Msg("QuillSecure Node booting...")
 	closeHandler()
 
-	sc := SensorCollection{
-		deviceID: deviceID,
-	}
+	sc := NewSensorCollection(deviceID, viper.GetString("leaderHost"), viper.GetInt("leaderPort"), viper.GetInt("pingIntervalSecs"))
 	// find and activate all sensor connected to device
 	sc.RegisterSensors()
+	sc.startPing()
 	log.Info().Msg("QuillSecure Node booted")
 
 	sc.Poll()

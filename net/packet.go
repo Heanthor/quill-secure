@@ -11,6 +11,11 @@ type Packet struct {
 	Data []byte
 }
 
+type Dest struct {
+	Host string
+	Port int
+}
+
 func (p Packet) Encode(w io.Writer) error {
 	e := gob.NewEncoder(w)
 
