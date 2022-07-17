@@ -4,6 +4,10 @@ const (
 	TypeFake = iota + 1
 )
 
+var sensorByType = map[int]string{
+	TypeFake: "fake",
+}
+
 type Sensor interface {
 	// Type denotes the sensor type in the message.
 	// If type is 0, it corresponds to a non-data message (ping, etc)
@@ -14,4 +18,13 @@ type Sensor interface {
 	PollRate() int64
 	Poll() ([]byte, error)
 	Close()
+}
+
+// NameByType maps human readable names to sensor types
+func NameByType(typ int) string {
+	if n, ok := sensorByType[typ]; ok {
+		return n
+	} else {
+		return "invalid type"
+	}
 }

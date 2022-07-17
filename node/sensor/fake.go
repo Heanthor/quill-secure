@@ -13,7 +13,7 @@ func (f *FakeSensor) Type() uint8 {
 }
 
 func (f *FakeSensor) TypeStr() string {
-	return "fake"
+	return NameByType(int(f.Type()))
 }
 
 func (f *FakeSensor) Ping() error {

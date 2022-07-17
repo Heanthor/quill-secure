@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	mynet "github.com/Heanthor/quill-secure/net"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/rs/zerolog/log"
 	"net"
 	"strconv"
+	"time"
 )
 
 const (
@@ -13,49 +15,62 @@ const (
 )
 
 type LeaderNet struct {
-	dest     mynet.Dest
-	listener net.Listener
+	dest          mynet.Dest
+	listener      net.Listener
+	activeSensors map[uint8]remoteSensor
 
-	datapoints <-chan SensorData
+	closing bool
+
+	datapoints chan SensorData
+}
+
+type remoteSensor struct {
+	DeviceID   uint8
+	Type       uint8
+	LastSeenAt time.Time
 }
 
 type SensorData struct {
-	deviceID uint8
-	data     []byte
+	sensor remoteSensor
+	data   []byte
 }
 
 // NewLeaderNet returns a new LeaderNet with listener initialized on host and port
 func NewLeaderNet(host string, port int) (*LeaderNet, error) {
 	listener, err := net.Listen(ConnType, host+":"+strconv.Itoa(port))
 	if err != nil {
-		log.Err(err).Msg("Error starting listener")
-		return nil, err
+		return nil, fmt.Errorf("NewLeaderNet error starting listener: %w", err)
 	}
 	ip, err := mynet.ParseHost(host)
 	if err != nil {
 		log.Fatal().Msg("Invalid host parameter")
-
 	}
+
 	return &LeaderNet{
 		dest: mynet.Dest{
 			Host: ip,
 			Port: port,
 		},
-		listener:   listener,
-		datapoints: make(chan SensorData),
+		listener:      listener,
+		datapoints:    make(chan SensorData),
+		activeSensors: make(map[uint8]remoteSensor),
 	}, nil
 }
 
 func (l *LeaderNet) StartListening() error {
 	log.Info().Str("host", l.dest.Host.String()).Int("port", l.dest.Port).Msg("Started listening")
 	for {
+		if l.closing {
+			return nil
+		}
 		// Listen for an incoming connection.
 		conn, err := l.listener.Accept()
-		if err != nil {
-			log.Err(err).Msg("Error accepting connection")
+		if err != nil && !l.closing {
+			log.Err(err).Msg("StartListening: Error accepting connection")
 			continue
 		}
-		// Handle connections in a new goroutine.
+
+		// TODO a thread pool should be good here
 		go l.handleRequest(conn)
 	}
 }
@@ -63,21 +78,45 @@ func (l *LeaderNet) StartListening() error {
 func (l *LeaderNet) handleRequest(conn net.Conn) {
 	p, err := mynet.ReadPacket(conn)
 	if err != nil {
-		log.Err(err).Msg("Error decoding packet")
+		log.Err(err).Msg("handleRequest: Error decoding packet")
 		return
 	}
-	// TODO 2:23PM ERR Error accepting connection error="accept tcp 127.0.0.1:5530: use of closed network connection"
 	defer conn.Close()
 
 	switch p.Typ {
 	case 0:
-		log.Debug().Uint8("deviceID", p.UID).Msg("ping")
+		// TODO age out sensors if they have not been seen in a ping for x minutes
+		l.handleSensorPing(p)
 	case sensor.TypeFake:
 		log.Info().Uint8("deviceID", p.UID).Msg("fake sensor readout")
+		l.datapoints <- SensorData{
+			sensor: remoteSensor{
+				DeviceID: p.UID,
+				Type:     p.Typ,
+			},
+			data: p.Data,
+		}
+	}
+}
+
+func (l *LeaderNet) handleSensorPing(p *mynet.Packet) {
+	log.Debug().Uint8("deviceID", p.UID).Msg("ping")
+
+	if entry, ok := l.activeSensors[p.UID]; !ok {
+		log.Info().Uint8("deviceID", p.UID).Str("type", sensor.NameByType(int(p.Typ))).Msg("New sensor connected")
+		l.activeSensors[p.UID] = remoteSensor{
+			DeviceID:   p.UID,
+			Type:       p.Typ,
+			LastSeenAt: time.Now(),
+		}
+	} else {
+		entry.LastSeenAt = time.Now()
+		l.activeSensors[p.UID] = entry
 	}
 }
 
 func (l *LeaderNet) Close() {
+	l.closing = true
 	log.Debug().Msg("Close listener")
 	if l.listener != nil {
 		l.listener.Close()

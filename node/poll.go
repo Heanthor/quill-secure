@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	mynet "github.com/Heanthor/quill-secure/net"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/rs/zerolog/log"
@@ -34,7 +35,6 @@ func NewSensorCollection(deviceID uint8, host string, port, pingIntervalSecs, pa
 	ip, err := mynet.ParseHost(host)
 	if err != nil {
 		log.Fatal().Msg("Invalid host parameter")
-
 	}
 
 	return SensorCollection{
@@ -130,6 +130,7 @@ func (s *SensorCollection) sendConsumer() {
 // This method blocks on sensorPings
 func (s *SensorCollection) Poll() {
 	go s.sendConsumer()
+
 	for sn := range s.sensorPings {
 		data, err := sn.Poll()
 		if err != nil {
@@ -160,14 +161,12 @@ func (s *SensorCollection) SendPacket(p mynet.Packet) error {
 		Port: s.leader.Port,
 	})
 	if err != nil {
-		log.Err(err).Msg("Error creating TCP conn to leader")
-		return err
+		return fmt.Errorf("error creating TCP conn to leader: %w", err)
 	}
 	defer conn.Close()
 
 	if err := sendPacket(p, conn); err != nil {
-		log.Err(err).Msg("Error sending packet")
-		return err
+		return fmt.Errorf("error sending packet: %w", err)
 	}
 
 	return nil
