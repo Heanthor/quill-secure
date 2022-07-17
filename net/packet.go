@@ -2,7 +2,9 @@ package net
 
 import (
 	"encoding/gob"
+	"errors"
 	"io"
+	"net"
 )
 
 type Packet struct {
@@ -12,8 +14,17 @@ type Packet struct {
 }
 
 type Dest struct {
-	Host string
+	Host net.IP
 	Port int
+}
+
+func ParseHost(host string) (net.IP, error) {
+	ip := net.ParseIP(host)
+	if ip == nil && host != "localhost" {
+		return nil, errors.New("invalid host")
+	}
+
+	return ip, nil
 }
 
 func (p Packet) Encode(w io.Writer) error {

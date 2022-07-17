@@ -13,22 +13,44 @@ const (
 )
 
 type LeaderNet struct {
-	dest mynet.Dest
-
+	dest     mynet.Dest
 	listener net.Listener
+
+	datapoints <-chan SensorData
+}
+
+type SensorData struct {
+	deviceID uint8
+	data     []byte
+}
+
+// NewLeaderNet returns a new LeaderNet with listener initialized on host and port
+func NewLeaderNet(host string, port int) (*LeaderNet, error) {
+	listener, err := net.Listen(ConnType, host+":"+strconv.Itoa(port))
+	if err != nil {
+		log.Err(err).Msg("Error starting listener")
+		return nil, err
+	}
+	ip, err := mynet.ParseHost(host)
+	if err != nil {
+		log.Fatal().Msg("Invalid host parameter")
+
+	}
+	return &LeaderNet{
+		dest: mynet.Dest{
+			Host: ip,
+			Port: port,
+		},
+		listener:   listener,
+		datapoints: make(chan SensorData),
+	}, nil
 }
 
 func (l *LeaderNet) StartListening() error {
-	listener, err := net.Listen(ConnType, l.dest.Host+":"+strconv.Itoa(l.dest.Port))
-	if err != nil {
-		log.Err(err).Msg("Error starting listener")
-		return err
-	}
-
-	log.Info().Str("host", l.dest.Host).Int("port", l.dest.Port).Msg("Started listening")
+	log.Info().Str("host", l.dest.Host.String()).Int("port", l.dest.Port).Msg("Started listening")
 	for {
 		// Listen for an incoming connection.
-		conn, err := listener.Accept()
+		conn, err := l.listener.Accept()
 		if err != nil {
 			log.Err(err).Msg("Error accepting connection")
 			continue
@@ -44,6 +66,8 @@ func (l *LeaderNet) handleRequest(conn net.Conn) {
 		log.Err(err).Msg("Error decoding packet")
 		return
 	}
+	// TODO 2:23PM ERR Error accepting connection error="accept tcp 127.0.0.1:5530: use of closed network connection"
+	defer conn.Close()
 
 	switch p.Typ {
 	case 0:

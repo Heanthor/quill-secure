@@ -32,17 +32,26 @@ func main() {
 	if overrideDeviceID != 0 {
 		deviceID = uint8(overrideDeviceID)
 	}
+	// inject deviceID into every log
+	log.Logger = log.With().Uint8("deviceID", deviceID).Logger()
 
-	log.Info().Uint8("deviceID", deviceID).Msg("QuillSecure Node booting...")
+	log.Info().Msg("QuillSecure Node booting...")
 
-	sc := NewSensorCollection(deviceID, viper.GetString("leaderHost"), viper.GetInt("leaderPort"), viper.GetInt("pingIntervalSecs"))
+	sc := NewSensorCollection(deviceID,
+		viper.GetString("leaderHost"),
+		viper.GetInt("leaderPort"),
+		viper.GetInt("pingIntervalSecs"),
+		viper.GetInt("packetBufferSize"))
 	setCloseHandler(&sc)
 
 	// find and activate all sensor connected to device
 	sc.RegisterSensors()
-	sc.startPing()
+	// start periodic health ping to leader
+	sc.StartLeaderHealthCheck()
+
 	log.Info().Msg("QuillSecure Node booted")
 
+	// block and poll connected sensors
 	sc.Poll()
 }
 
@@ -53,6 +62,9 @@ func setCloseHandler(sc *SensorCollection) {
 		<-c
 		log.Info().Msg("QuillSecure Node shutting down due to interrupt")
 		sc.StopPolling()
+		// drain outgoing packets before exiting
+		// TODO should this have a timeout?
+		<-sc.doneChan
 		os.Exit(0)
 	}()
 }

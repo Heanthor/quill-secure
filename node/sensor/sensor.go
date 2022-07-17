@@ -8,6 +8,7 @@ type Sensor interface {
 	// Type denotes the sensor type in the message.
 	// If type is 0, it corresponds to a non-data message (ping, etc)
 	Type() uint8
+	TypeStr() string
 	Ping() error
 	// PollRate returns the desired poll rate for the sensor in milliseconds
 	PollRate() int64

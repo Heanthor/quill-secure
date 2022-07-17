@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	net2 "github.com/Heanthor/quill-secure/net"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -20,11 +19,9 @@ func main() {
 	initConfig()
 	log.Info().Msg("QuillSecure Leader booting...")
 
-	net := LeaderNet{
-		dest: net2.Dest{
-			Host: viper.GetString("leaderHost"),
-			Port: viper.GetInt("leaderPort"),
-		},
+	net, err := NewLeaderNet(viper.GetString("leaderHost"), viper.GetInt("leaderPort"))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error initializing listener")
 	}
 	closeHandler(net)
 
@@ -36,7 +33,7 @@ func main() {
 	}
 }
 
-func closeHandler(net LeaderNet) {
+func closeHandler(net *LeaderNet) {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {

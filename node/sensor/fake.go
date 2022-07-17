@@ -12,6 +12,10 @@ func (f *FakeSensor) Type() uint8 {
 	return TypeFake
 }
 
+func (f *FakeSensor) TypeStr() string {
+	return "fake"
+}
+
 func (f *FakeSensor) Ping() error {
 	return nil
 }

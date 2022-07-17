@@ -4,3 +4,5 @@ pingIntervalSecs: 1
 
 leaderHost: localhost
 leaderPort: 5530
+
+packetBufferSize: 1000
