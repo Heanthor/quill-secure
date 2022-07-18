@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
+	"github.com/Heanthor/quill-secure/boot"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/mitchellh/go-homedir"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"os"
@@ -78,7 +78,5 @@ func initConfig() {
 		log.Fatal().Msg("No config file found")
 	}
 
-	if viper.GetBool("prettyLogging") {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	}
+	boot.SetGlobalLogger()
 }

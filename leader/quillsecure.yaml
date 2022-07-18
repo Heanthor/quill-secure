@@ -3,3 +3,4 @@ leaderHost: localhost
 leaderPort: 5530
 
 nodePingTimeoutSecs: 5
+logFile: leader.log
