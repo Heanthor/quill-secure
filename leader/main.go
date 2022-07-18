@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
+	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -18,8 +20,12 @@ var (
 func main() {
 	initConfig()
 	log.Info().Msg("QuillSecure Leader booting...")
+	gob.Register(sensor.Data{})
 
-	net, err := NewLeaderNet(viper.GetString("leaderHost"), viper.GetInt("leaderPort"))
+	net, err := NewLeaderNet(viper.GetString("leaderHost"),
+		viper.GetInt("leaderPort"),
+		viper.GetInt("nodePingTimeoutSecs"),
+	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing listener")
 	}

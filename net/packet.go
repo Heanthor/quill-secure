@@ -7,10 +7,17 @@ import (
 	"net"
 )
 
+const (
+	PacketTypeAnnounce = iota + 1
+	PacketTypeSensorData
+)
+
 type Packet struct {
-	UID  uint8
+	// UID is the "deviceID" of the node sending the packet
+	UID uint8
+	// Typ is the type of packet
 	Typ  uint8
-	Data []byte
+	Data interface{}
 }
 
 type Dest struct {

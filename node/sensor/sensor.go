@@ -16,8 +16,14 @@ type Sensor interface {
 	Ping() error
 	// PollRate returns the desired poll rate for the sensor in milliseconds
 	PollRate() int64
-	Poll() ([]byte, error)
+	Poll() (Data, error)
 	Close()
+}
+
+// Data is the wire format for sensor readings
+type Data struct {
+	Typ  uint8
+	Data []byte
 }
 
 // NameByType maps human readable names to sensor types

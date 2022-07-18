@@ -100,6 +100,7 @@ func (s *SensorCollection) StartLeaderHealthCheck() {
 func (s *SensorCollection) pingLeader() error {
 	p := mynet.Packet{
 		UID: s.deviceID,
+		Typ: mynet.PacketTypeAnnounce,
 	}
 
 	return s.SendPacket(p)
@@ -141,7 +142,7 @@ func (s *SensorCollection) Poll() {
 		// send data to leader
 		p := mynet.Packet{
 			UID:  s.deviceID,
-			Typ:  sn.Type(),
+			Typ:  mynet.PacketTypeSensorData,
 			Data: data,
 		}
 

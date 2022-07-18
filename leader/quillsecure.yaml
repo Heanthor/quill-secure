@@ -1,3 +1,5 @@
 prettyLogging: true
 leaderHost: localhost
 leaderPort: 5530
+
+nodePingTimeoutSecs: 5

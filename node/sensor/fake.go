@@ -20,8 +20,11 @@ func (f *FakeSensor) Ping() error {
 	return nil
 }
 
-func (f *FakeSensor) Poll() ([]byte, error) {
-	return []byte(f.Buf), nil
+func (f *FakeSensor) Poll() (Data, error) {
+	return Data{
+		Typ:  f.Type(),
+		Data: []byte(f.Buf),
+	}, nil
 }
 
 func (f *FakeSensor) Close() {

@@ -15,28 +15,31 @@ const (
 )
 
 type LeaderNet struct {
-	dest          mynet.Dest
-	listener      net.Listener
-	activeSensors map[uint8]remoteSensor
+	dest                mynet.Dest
+	listener            net.Listener
+	activeNodes         map[uint8]remoteNode
+	nodePingTimeoutSecs int
 
 	closing bool
 
 	datapoints chan SensorData
 }
 
-type remoteSensor struct {
-	DeviceID   uint8
-	Type       uint8
+type remoteNode struct {
+	DeviceID uint8
+	// TODO this should be a list
+	SensorType uint8
+	Active     bool
 	LastSeenAt time.Time
 }
 
 type SensorData struct {
-	sensor remoteSensor
-	data   []byte
+	sensor remoteNode
+	data   sensor.Data
 }
 
 // NewLeaderNet returns a new LeaderNet with listener initialized on host and port
-func NewLeaderNet(host string, port int) (*LeaderNet, error) {
+func NewLeaderNet(host string, port, nodePingTimeoutSecs int) (*LeaderNet, error) {
 	listener, err := net.Listen(ConnType, host+":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, fmt.Errorf("NewLeaderNet error starting listener: %w", err)
@@ -51,14 +54,31 @@ func NewLeaderNet(host string, port int) (*LeaderNet, error) {
 			Host: ip,
 			Port: port,
 		},
-		listener:      listener,
-		datapoints:    make(chan SensorData),
-		activeSensors: make(map[uint8]remoteSensor),
+		listener:            listener,
+		datapoints:          make(chan SensorData),
+		activeNodes:         make(map[uint8]remoteNode),
+		nodePingTimeoutSecs: nodePingTimeoutSecs,
 	}, nil
+}
+
+// nodeAgeWorker blocks and checks time since last ping from all connected sensors, marking inactive if they have gone silent
+func (l *LeaderNet) nodeAgeWorker() {
+	t := time.NewTicker(time.Second)
+	for ts := range t.C {
+		for _, sn := range l.activeNodes {
+			if ts.Sub(sn.LastSeenAt) > (time.Second*time.Duration(l.nodePingTimeoutSecs)) && sn.Active {
+				log.Warn().Uint8("deviceID", sn.DeviceID).Msg("Node has gone offline, marking inactive")
+				sn.Active = false
+				l.activeNodes[sn.DeviceID] = sn
+			}
+		}
+	}
 }
 
 func (l *LeaderNet) StartListening() error {
 	log.Info().Str("host", l.dest.Host.String()).Int("port", l.dest.Port).Msg("Started listening")
+	go l.nodeAgeWorker()
+
 	for {
 		if l.closing {
 			return nil
@@ -84,34 +104,40 @@ func (l *LeaderNet) handleRequest(conn net.Conn) {
 	defer conn.Close()
 
 	switch p.Typ {
-	case 0:
-		// TODO age out sensors if they have not been seen in a ping for x minutes
-		l.handleSensorPing(p)
-	case sensor.TypeFake:
+	case mynet.PacketTypeAnnounce:
+		l.nodeAnnounce(p)
+	case mynet.PacketTypeSensorData:
 		log.Info().Uint8("deviceID", p.UID).Msg("fake sensor readout")
 		l.datapoints <- SensorData{
-			sensor: remoteSensor{
-				DeviceID: p.UID,
-				Type:     p.Typ,
+			sensor: remoteNode{
+				DeviceID:   p.UID,
+				SensorType: p.Typ,
 			},
-			data: p.Data,
+			data: p.Data.(sensor.Data),
 		}
 	}
 }
 
-func (l *LeaderNet) handleSensorPing(p *mynet.Packet) {
-	log.Debug().Uint8("deviceID", p.UID).Msg("ping")
-
-	if entry, ok := l.activeSensors[p.UID]; !ok {
-		log.Info().Uint8("deviceID", p.UID).Str("type", sensor.NameByType(int(p.Typ))).Msg("New sensor connected")
-		l.activeSensors[p.UID] = remoteSensor{
+func (l *LeaderNet) nodeAnnounce(p *mynet.Packet) {
+	if entry, ok := l.activeNodes[p.UID]; !ok {
+		log.Info().Uint8("deviceID", p.UID).Str("type", sensor.NameByType(int(p.Typ))).Msg("New node connected")
+		l.activeNodes[p.UID] = remoteNode{
 			DeviceID:   p.UID,
-			Type:       p.Typ,
+			SensorType: p.Typ,
+			Active:     true,
 			LastSeenAt: time.Now(),
 		}
 	} else {
 		entry.LastSeenAt = time.Now()
-		l.activeSensors[p.UID] = entry
+		if !entry.Active {
+			log.Info().
+				Uint8("deviceID", p.UID).
+				Str("type", sensor.NameByType(int(p.Typ))).
+				Msg("Previously seen node reconnected")
+			entry.Active = true
+		}
+
+		l.activeNodes[p.UID] = entry
 	}
 }
 

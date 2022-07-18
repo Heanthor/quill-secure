@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/gob"
 	"flag"
 	"fmt"
+	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -36,6 +38,7 @@ func main() {
 	log.Logger = log.With().Uint8("deviceID", deviceID).Logger()
 
 	log.Info().Msg("QuillSecure Node booting...")
+	gob.Register(sensor.Data{})
 
 	sc := NewSensorCollection(deviceID,
 		viper.GetString("leaderHost"),

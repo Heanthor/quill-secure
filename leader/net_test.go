@@ -7,11 +7,11 @@ import (
 	"time"
 )
 
-func TestLeaderNet_handleSensorPing(t *testing.T) {
+func TestLeaderNet_nodeAnnounce(t *testing.T) {
 	time1, _ := time.Parse(time.RFC1123, "Sun, 17 Jul 2022 22:13:37 GMT")
 	deviceID := uint8(1)
 	type fields struct {
-		activeSensors map[uint8]remoteSensor
+		activeSensors map[uint8]remoteNode
 	}
 	type args struct {
 		p *mynet.Packet
@@ -23,11 +23,12 @@ func TestLeaderNet_handleSensorPing(t *testing.T) {
 	}{
 		{
 			name: "updates LastSeenAt for returning sensor",
-			fields: fields{activeSensors: map[uint8]remoteSensor{
+			fields: fields{activeSensors: map[uint8]remoteNode{
 				deviceID: {
 					DeviceID:   deviceID,
-					Type:       sensor.TypeFake,
+					SensorType: sensor.TypeFake,
 					LastSeenAt: time1,
+					Active:     true,
 				},
 			}},
 			args: args{p: &mynet.Packet{
@@ -39,10 +40,10 @@ func TestLeaderNet_handleSensorPing(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &LeaderNet{
-				activeSensors: tt.fields.activeSensors,
+				activeNodes: tt.fields.activeSensors,
 			}
-			l.handleSensorPing(tt.args.p)
-			if l.activeSensors[deviceID].LastSeenAt == time1 {
+			l.nodeAnnounce(tt.args.p)
+			if l.activeNodes[deviceID].LastSeenAt == time1 {
 				t.Fatalf("time not updated")
 			}
 		})
