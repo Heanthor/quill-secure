@@ -5,6 +5,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"os"
+	"time"
 )
 
 func SetGlobalLogger() {
@@ -13,11 +14,13 @@ func SetGlobalLogger() {
 		log.Logger = log.Output(consoleWriter)
 	}
 
-	logFile := viper.GetString("logFile")
-	if logFile != "" {
-		file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0755)
+	logFileSuffix := viper.GetString("logFileSuffix")
+	if logFileSuffix != "" {
+		dateStamp := "quillsecure_" + time.Now().Format("2006_01_02") + "_" + logFileSuffix + ".log"
+
+		file, err := os.OpenFile(dateStamp, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
-			log.Fatal().Str("logFile", logFile).Msg("Failed to open log file")
+			log.Fatal().Str("logFile", dateStamp).Msg("Failed to open log file")
 		}
 
 		multi := zerolog.MultiLevelWriter(consoleWriter, file)

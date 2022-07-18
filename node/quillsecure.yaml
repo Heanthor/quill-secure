@@ -6,4 +6,4 @@ leaderHost: localhost
 leaderPort: 5530
 
 packetBufferSize: 1000
-logFile: node.log
+#logFileSuffix: node1
