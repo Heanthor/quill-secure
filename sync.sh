@@ -1,0 +1,1 @@
+rsync -av sensor/ reed_pi@192.168.0.48:/home/reed_pi/sensor

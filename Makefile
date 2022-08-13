@@ -4,3 +4,6 @@ run-leader:
 deviceID := 0
 run-node:
 	go run node/main.go node/poll.go -deviceID=${deviceID}
+
+sync:
+	bash sync.sh

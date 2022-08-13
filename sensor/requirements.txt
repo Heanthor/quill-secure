@@ -1,0 +1,3 @@
+Adafruit-Blinka
+adafruit-circuitpython-bme280
+adafruit-circuitpython-sgp40
