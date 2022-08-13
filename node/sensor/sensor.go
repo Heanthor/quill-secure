@@ -2,6 +2,7 @@ package sensor
 
 const (
 	TypeFake = iota + 1
+	TypeAtmospheric
 )
 
 var sensorByType = map[int]string{
@@ -13,6 +14,8 @@ type Sensor interface {
 	// If type is 0, it corresponds to a non-data message (ping, etc)
 	Type() uint8
 	TypeStr() string
+	// Init starts or initializes the connection with the sensor
+	Init() error
 	Ping() error
 	// PollRate returns the desired poll rate for the sensor in milliseconds
 	PollRate() int64

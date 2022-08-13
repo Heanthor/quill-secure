@@ -1,5 +1,4 @@
 #!/bin/bash
-keylocation='/Users/reedtrevelyan/Desktop/ec2_keys'
 echo "Starting deployment."
 
 die() {
@@ -12,16 +11,22 @@ if test -z "$PI_HOST"; then
   exit 1
 fi
 
+ssh "$PI_HOST" "sudo mkdir -p /usr/local/bin/quillsecure" || die "Failed to create quillsecure directory"
+
 # first copy config file
-scp -i "$keylocation/aucbot-orch-prod.pem" "$(pwd)/quillsecure_prod.yaml" "$PI_HOST":/home/quillsecure/quillsecure_prod.yaml || die "Failed to copy orch-config.prod.sh."
+scp "$(pwd)/leader/quillsecure_prod.yaml" "$PI_HOST":/tmp/quillsecure_prod.yaml || die "Failed to copy quillsecure_prod.yaml."
+ssh "$PI_HOST" "sudo mv /tmp/quillsecure_prod.yaml /usr/local/bin/quillsecure/quillsecure_leader.yaml" || die "Failed to copy quillsecure_prod.yaml."
 
-# then copy bot binary
-scp "$(pwd)/cmd/orchestrator/orchestrator" "$PI_HOST":/usr/local/bin/leader_new || die "Failed to copy leader_new."
+# then copy binary
+scp "$(pwd)/bin/leader" "$PI_HOST":/tmp/leader_new || die "Failed to copy leader_new."
 
+# TODO service
 # then restart service, swapping in the new executable
-ssh -i "$keylocation/aucbot-orch-prod.pem" "$PI_HOST" "sudo systemctl stop leader.service && \
-mv /usr/local/bin/leader_new /usr/local/bin/leader && \
-sudo systemctl start leader.service
-" || die "Service restart failed."
+#ssh "$PI_HOST" "sudo systemctl stop leader.service && \
+#mv /tmp/leader_new /usr/local/bin/quillsecure/leader && \
+#sudo systemctl start leader.service
+#" || die "Service restart failed."
+
+ssh "$PI_HOST" "sudo mv /tmp/leader_new /usr/local/bin/quillsecure/leader" || die "TODO mv failed"
 
 echo "Deployment completed successfully."

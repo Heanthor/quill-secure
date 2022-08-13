@@ -12,6 +12,10 @@ func (f *FakeSensor) Type() uint8 {
 	return TypeFake
 }
 
+func (f *FakeSensor) Init() error {
+	return nil
+}
+
 func (f *FakeSensor) TypeStr() string {
 	return NameByType(int(f.Type()))
 }

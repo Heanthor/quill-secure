@@ -85,11 +85,11 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name "quillsecure.yaml"
+		// Search config in home directory with name "quillsecure_leader.yaml"
 		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("node")
-		viper.SetConfigName("quillsecure")
+		viper.SetConfigName("quillsecure_node")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
