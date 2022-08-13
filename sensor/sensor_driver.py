@@ -40,7 +40,7 @@ class SensorDriver:
 
             ts = time.time()
             sys.stdout.write(f"{ts},{temperature},{relative_humidity},{pressure},{altitude},{voc_index}")
-
+            sys.stdout.flush()
             print()
             time.sleep(self.poll_freq)
 

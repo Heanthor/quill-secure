@@ -6,7 +6,8 @@ const (
 )
 
 var sensorByType = map[int]string{
-	TypeFake: "fake",
+	TypeFake:        "fake",
+	TypeAtmospheric: "atmospheric",
 }
 
 type Sensor interface {
@@ -17,9 +18,9 @@ type Sensor interface {
 	// Init starts or initializes the connection with the sensor
 	Init() error
 	Ping() error
-	// PollRate returns the desired poll rate for the sensor in milliseconds
-	PollRate() int64
-	Poll() (Data, error)
+	// Data returns error and data channels from the sensor.
+	// The channels do not have to be buffered
+	Data() (chan Data, chan error)
 	Close()
 }
 

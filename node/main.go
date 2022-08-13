@@ -48,7 +48,7 @@ func main() {
 	setCloseHandler(&sc)
 
 	// find and activate all sensor connected to device
-	sc.RegisterSensors()
+	sc.RegisterSensors(viper.GetString("sensors.atmospheric.executable"))
 	// start periodic health ping to leader
 	sc.StartLeaderHealthCheck()
 
@@ -60,7 +60,7 @@ func main() {
 
 func setCloseHandler(sc *SensorCollection) {
 	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-c
 		log.Info().Msg("QuillSecure Node shutting down due to interrupt")

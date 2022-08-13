@@ -13,7 +13,8 @@ import (
 type SensorCollection struct {
 	deviceID      uint8
 	activeSensors []sensor.Sensor
-	sensorPings   chan sensor.Sensor
+	sensorPings   chan sensorDataWrapper
+	errorPings    chan sensorErrorWrapper
 
 	leader        mynet.Dest
 	pingTicker    *time.Ticker
@@ -43,34 +44,66 @@ func NewSensorCollection(deviceID uint8, host string, port, pingIntervalSecs, pa
 			Host: ip,
 			Port: port,
 		},
-		sensorPings: make(chan sensor.Sensor),
+		sensorPings: make(chan sensorDataWrapper),
+		errorPings:  make(chan sensorErrorWrapper),
 		doneChan:    make(chan bool),
 		sendChan:    sendChan,
 		pingTicker:  t,
 	}
 }
 
-func (s *SensorCollection) RegisterSensors() {
-	f := sensor.FakeSensor{Buf: "fake data"}
-	if f.Ping() == nil {
-		s.registerSensor(&f)
-	}
-	// TODO more sensors here
+type sensorDataWrapper struct {
+	sensor sensor.Sensor
+	data   sensor.Data
+}
+
+type sensorErrorWrapper struct {
+	sensor sensor.Sensor
+	err    error
+}
+
+func (s *SensorCollection) RegisterSensors(atmosphericExecutable string) {
+	s.registerSensor(&sensor.FakeSensor{Buf: "fake data"})
+	s.registerSensor(sensor.NewAtmospheric(atmosphericExecutable))
 }
 
 func (s *SensorCollection) registerSensor(sn sensor.Sensor) {
+	if err := sn.Init(); err != nil {
+		log.Fatal().Err(err).Str("type", sn.TypeStr()).Msg("Sensor failed to initialize")
+		return
+	}
+
 	log.Info().Str("type", sn.TypeStr()).Msg("Registered new sensor")
 
-	t := time.NewTicker(time.Duration(sn.PollRate()) * time.Millisecond)
-	go func() {
-		for range t.C {
-			s.sensorPings <- sn
+	// consolidate pings from sensors into single channels
+	go func(sn sensor.Sensor) {
+		data, err := sn.Data()
+		for {
+			select {
+			case <-s.doneChan:
+				return
+			case d := <-data:
+				s.sensorPings <- sensorDataWrapper{
+					sensor: sn,
+					data:   d,
+				}
+			case e := <-err:
+				s.errorPings <- sensorErrorWrapper{
+					sensor: sn,
+					err:    e,
+				}
+			}
 		}
-	}()
+	}(sn)
+
 	s.activeSensors = append(s.activeSensors, sn)
 }
 
 func (s *SensorCollection) StopPolling() {
+	for _, sn := range s.activeSensors {
+		sn.Close()
+	}
+
 	close(s.sensorPings)
 	close(s.sendChan)
 }
@@ -133,12 +166,7 @@ func (s *SensorCollection) Poll() {
 	go s.sendConsumer()
 
 	for sn := range s.sensorPings {
-		data, err := sn.Poll()
-		if err != nil {
-			log.Err(err).Uint8("sensor", sn.Type()).Msg("Error in sensor")
-			continue
-		}
-
+		data := sn.data
 		// send data to leader
 		p := mynet.Packet{
 			UID:  s.deviceID,
@@ -147,7 +175,7 @@ func (s *SensorCollection) Poll() {
 		}
 
 		select {
-		case s.sendChan <- outgoingPacketWrapper{p, sn}:
+		case s.sendChan <- outgoingPacketWrapper{p, sn.sensor}:
 		default:
 			log.Warn().Msg("Sensor buffer is full, dropping packet")
 		}

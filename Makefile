@@ -17,5 +17,5 @@ build-leader-prod:
 deploy-leader: build-leader-prod
 	bash deploy/deploy_leader.sh
 
-deploy-node: build-node-prod
+deploy-node: sync build-node-prod
 	bash deploy/deploy_node.sh

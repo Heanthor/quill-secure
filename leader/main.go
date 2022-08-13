@@ -41,7 +41,7 @@ func main() {
 
 func closeHandler(net *LeaderNet) {
 	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-c
 		net.Close()

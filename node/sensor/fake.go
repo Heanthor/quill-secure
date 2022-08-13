@@ -1,11 +1,12 @@
 package sensor
 
+import (
+	"github.com/rs/zerolog/log"
+	"time"
+)
+
 type FakeSensor struct {
 	Buf string
-}
-
-func (f *FakeSensor) PollRate() int64 {
-	return 5000
 }
 
 func (f *FakeSensor) Type() uint8 {
@@ -24,12 +25,24 @@ func (f *FakeSensor) Ping() error {
 	return nil
 }
 
-func (f *FakeSensor) Poll() (Data, error) {
-	return Data{
-		Typ:  f.Type(),
-		Data: []byte(f.Buf),
-	}, nil
+func (f *FakeSensor) Data() (chan Data, chan error) {
+	errCh := make(chan error)
+	dataCh := make(chan Data)
+
+	t := time.NewTicker(5 * time.Second)
+	go func() {
+		for {
+			<-t.C
+			dataCh <- Data{
+				Typ:  f.Type(),
+				Data: []byte(f.Buf),
+			}
+		}
+	}()
+
+	return dataCh, errCh
 }
 
 func (f *FakeSensor) Close() {
+	log.Info().Msg("close fake sensor")
 }

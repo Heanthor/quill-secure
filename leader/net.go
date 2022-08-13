@@ -107,7 +107,7 @@ func (l *LeaderNet) handleRequest(conn net.Conn) {
 	case mynet.PacketTypeAnnounce:
 		l.nodeAnnounce(p)
 	case mynet.PacketTypeSensorData:
-		log.Info().Uint8("deviceID", p.UID).Msg("fake sensor readout")
+		log.Info().Uint8("deviceID", p.UID).Msg("sensor readout")
 		l.datapoints <- SensorData{
 			sensor: remoteNode{
 				DeviceID:   p.UID,

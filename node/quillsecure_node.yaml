@@ -6,4 +6,7 @@ leaderHost: localhost
 leaderPort: 5530
 
 packetBufferSize: 1000
+sensors:
+  atmospheric:
+    executable: venv/bin/python3 sensor/fake_sensor.py
 #logFileSuffix: node1
