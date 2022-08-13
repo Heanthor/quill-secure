@@ -18,4 +18,4 @@ deploy-leader: build-leader-prod
 	bash deploy/deploy_leader.sh
 
 deploy-node: build-node-prod
-	deploy/de
+	bash deploy/deploy_node.sh

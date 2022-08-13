@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Starting deployment."
+echo "Starting leader deployment."
 
 die() {
   printf -- '%s\n' "$*"
@@ -14,8 +14,8 @@ fi
 ssh "$PI_HOST" "sudo mkdir -p /usr/local/bin/quillsecure" || die "Failed to create quillsecure directory"
 
 # first copy config file
-scp "$(pwd)/leader/quillsecure_prod.yaml" "$PI_HOST":/tmp/quillsecure_prod.yaml || die "Failed to copy quillsecure_prod.yaml."
-ssh "$PI_HOST" "sudo mv /tmp/quillsecure_prod.yaml /usr/local/bin/quillsecure/quillsecure_leader.yaml" || die "Failed to copy quillsecure_prod.yaml."
+scp "$(pwd)/leader/quillsecure_prod.yaml" "$PI_HOST":/tmp/quillsecure_leader_prod.yaml || die "Failed to copy quillsecure_prod.yaml."
+ssh "$PI_HOST" "sudo mv /tmp/quillsecure_leader_prod.yaml /usr/local/bin/quillsecure/quillsecure_leader.yaml" || die "Failed to copy quillsecure_prod.yaml."
 
 # then copy binary
 scp "$(pwd)/bin/leader" "$PI_HOST":/tmp/leader_new || die "Failed to copy leader_new."
