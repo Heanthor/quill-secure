@@ -1,5 +1,5 @@
 run-leader:
-	go run leader/main.go leader/net.go
+	go run $(ls -1 leader/*.go | grep -v _test.go)
 
 deviceID := 0
 run-node:
@@ -12,9 +12,9 @@ build-node-prod:
 	env GOOS=linux GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o bin/node node/*.go
 
 build-leader-prod:
-	env GOOS=linux GOARCH=arm GOARM=5 go build -ldflags="-s -w" -o bin/leader leader/main.go leader/net.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/leader leader/main.go leader/net.go
 
-deploy-leader: build-leader-prod
+deploy-leader:
 	bash deploy/deploy_leader.sh
 
 deploy-node: sync build-node-prod

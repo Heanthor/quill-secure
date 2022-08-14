@@ -1,0 +1,12 @@
+[Unit]
+Description=QuillSecure Node Service
+After=network.target
+StartLimitIntervalSec=0[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=quillsecure
+ExecStart=/usr/local/bin/node
+
+[Install]
+WantedBy=multi-user.target
