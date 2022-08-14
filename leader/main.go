@@ -22,14 +22,21 @@ func main() {
 	log.Info().Msg("QuillSecure Leader booting...")
 	gob.Register(sensor.Data{})
 
+	db, err := NewDB(viper.GetString("dbFile"))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error initializing database")
+	}
+	log.Info().Msg("Database initialized")
+
 	net, err := NewLeaderNet(viper.GetString("leaderHost"),
 		viper.GetInt("leaderPort"),
 		viper.GetInt("nodePingTimeoutSecs"),
+		db,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing listener")
 	}
-	closeHandler(net)
+	registerCloseHandler(net, db)
 
 	log.Info().Msg("QuillSecure Leader booted")
 
@@ -39,12 +46,13 @@ func main() {
 	}
 }
 
-func closeHandler(net *LeaderNet) {
+func registerCloseHandler(net *LeaderNet, d *DB) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-c
 		net.Close()
+		d.Close()
 		log.Info().Msg("QuillSecure Leader shutting down due to interrupt")
 
 		os.Exit(0)

@@ -18,3 +18,4 @@
 *prod*.yaml
 venv
 bin
+*.db

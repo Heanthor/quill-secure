@@ -1,5 +1,5 @@
 run-leader:
-	go run $(ls -1 leader/*.go | grep -v _test.go)
+	go run $$(ls -1 leader/*.go | grep -v _test.go)
 
 deviceID := 0
 run-node:

@@ -38,7 +38,7 @@ class SensorDriver:
 
                 print("VOC Index: ", voc_index)
 
-            ts = time.time()
+            ts = int(time.time())
             sys.stdout.write(f"{ts},{temperature},{relative_humidity},{pressure},{altitude},{voc_index}")
             sys.stdout.flush()
             print()

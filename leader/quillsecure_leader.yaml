@@ -2,5 +2,6 @@ prettyLogging: true
 leaderHost: localhost
 leaderPort: 5530
 
+dbFile: leader.db
 nodePingTimeoutSecs: 5
 #logFileSuffix: leader
