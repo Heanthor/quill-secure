@@ -12,7 +12,7 @@ if test -z "$LINODE_HOST"; then
   exit 1
 fi
 
-ssh "$LINODE_HOST" "sudo mkdir -p /usr/local/bin/quillsecure && rm -r /tmp/src && sudo mkdir -p /tmp/src" || die "Failed to create directories"
+ssh "$LINODE_HOST" "sudo mkdir -p /usr/local/bin/quillsecure && rm -r /tmp/src && sudo mkdir -p /tmp/src && sudo chown quillsecure /usr/local/bin/quillsecure" || die "Failed to create directories"
 
 # first copy config file
 scp "$(pwd)/leader/quillsecure_prod.yaml" "$LINODE_HOST":/tmp/quillsecure_leader_prod.yaml || die "Failed to copy quillsecure_prod.yaml."
@@ -28,13 +28,14 @@ env GOOS=linux $remote_go build -ldflags=\"-s -w\" -o /tmp/leader_new \$(ls -1 l
 rm /tmp/src/leader_src.zip
 " || die "Failed to build sources"
 
-# TODO service
 # then restart service, swapping in the new executable
-#ssh "$LINODE_HOST" "sudo systemctl stop node.service && \
-#mv /tmp/leader_new /usr/local/bin/quillsecure/leader && \
-#sudo systemctl start node.service
-#" || die "Service restart failed."
+scp "$(pwd)/deploy/assets/leader.service" "$LINODE_HOST":/etc/systemd/system/leader.service || die "Failed to copy leader service."
 
-ssh "$LINODE_HOST" "sudo mv /tmp/leader_new /usr/local/bin/quillsecure/leader" || die "TODO mv failed"
+ssh "$LINODE_HOST" "(sudo systemctl stop leader.service || true) && \
+mv /tmp/leader_new /usr/local/bin/quillsecure/leader && \
+sudo chmod 777 /usr/local/bin/quillsecure/leader && \
+sudo systemctl daemon-reload && \
+sudo systemctl start leader.service
+" || die "Service restart failed."
 
 echo "Deployment completed successfully."

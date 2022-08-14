@@ -75,6 +75,7 @@ func initConfig() {
 		// Search config in home directory with name "quillsecure_leader.yaml"
 		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
+		viper.AddConfigPath("/usr/local/bin/quillsecure")
 		viper.AddConfigPath("leader")
 		viper.SetConfigName("quillsecure_leader")
 	}
