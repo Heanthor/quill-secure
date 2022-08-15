@@ -3,5 +3,9 @@ leaderHost: localhost
 leaderPort: 5530
 
 dbFile: leader.db
+# number of seconds to wait for a response from a node before declaring it inactive
 nodePingTimeoutSecs: 5
+api:
+  port: 5549
+  dashboardStatsDays: 7
 #logFileSuffix: leader

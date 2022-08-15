@@ -4,6 +4,8 @@ import (
 	"encoding/gob"
 	"fmt"
 	"github.com/Heanthor/quill-secure/boot"
+	"github.com/Heanthor/quill-secure/db"
+	"github.com/Heanthor/quill-secure/leader/api"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog/log"
@@ -22,7 +24,7 @@ func main() {
 	log.Info().Msg("QuillSecure Leader booting...")
 	gob.Register(sensor.Data{})
 
-	db, err := NewDB(viper.GetString("dbFile"))
+	d, err := db.NewDB(viper.GetString("dbFile"))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing database")
 	}
@@ -31,12 +33,21 @@ func main() {
 	net, err := NewLeaderNet(viper.GetString("leaderHost"),
 		viper.GetInt("leaderPort"),
 		viper.GetInt("nodePingTimeoutSecs"),
-		db,
+		d,
 	)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error initializing listener")
 	}
-	registerCloseHandler(net, db)
+
+	a := api.NewRouter(d, viper.GetInt("api.dashboardStatsDays"))
+	go func() {
+		log.Info().Msg("API initialized")
+		if err := a.Listen(viper.GetInt("api.port")); err != nil {
+			log.Fatal().Err(err).Msg("Error in API")
+		}
+	}()
+
+	registerCloseHandler(net, a, d)
 
 	log.Info().Msg("QuillSecure Leader booted")
 
@@ -46,7 +57,7 @@ func main() {
 	}
 }
 
-func registerCloseHandler(net *LeaderNet, d *DB) {
+func registerCloseHandler(net *LeaderNet, a *api.API, d *db.DB) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {

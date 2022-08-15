@@ -19,7 +19,7 @@ scp "$(pwd)/leader/quillsecure_prod.yaml" "$LINODE_HOST":/tmp/quillsecure_leader
 ssh "$LINODE_HOST" "sudo mv /tmp/quillsecure_leader_prod.yaml /usr/local/bin/quillsecure/quillsecure_leader.yaml" || die "Failed to copy quillsecure_prod.yaml."
 
 # then copy sources and compile binary
-zip -r bin/leader_src.zip $(git ls-tree --name-only -r HEAD)
+zip -r bin/leader_src.zip $(git ls-files)
 scp "$(pwd)/bin/leader_src.zip" "$LINODE_HOST":/tmp/src/leader_src.zip || die "Failed to copy leader sources."
 ssh "$LINODE_HOST" "cd /tmp/src && \
 unzip leader_src.zip && \

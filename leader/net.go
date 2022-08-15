@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/Heanthor/quill-secure/db"
 	mynet "github.com/Heanthor/quill-secure/net"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/rs/zerolog/log"
@@ -15,7 +16,7 @@ const (
 )
 
 type LeaderNet struct {
-	DB *DB
+	DB *db.DB
 
 	dest                mynet.Dest
 	listener            net.Listener
@@ -41,7 +42,7 @@ type SensorData struct {
 }
 
 // NewLeaderNet returns a new LeaderNet with listener initialized on host and port
-func NewLeaderNet(host string, port, nodePingTimeoutSecs int, db *DB) (*LeaderNet, error) {
+func NewLeaderNet(host string, port, nodePingTimeoutSecs int, db *db.DB) (*LeaderNet, error) {
 	listener, err := net.Listen(ConnType, host+":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, fmt.Errorf("NewLeaderNet error starting listener: %w", err)
