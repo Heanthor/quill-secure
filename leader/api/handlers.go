@@ -47,15 +47,33 @@ func (a *API) getDashboardStats(dashboardStatsDays int) http.HandlerFunc {
 			return
 		}
 
-		if err := json.NewEncoder(w).Encode(stats); err != nil {
-			log.Err(err).Msg("getDashboardStats encoding error")
+		if len(stats) == 0 {
+			writeMessage(w, "no stats found", http.StatusNotFound)
+			return
 		}
+
+		writeJSON(w, stats)
 	}
 }
 
 func respondInternalServerError(w http.ResponseWriter, err string) {
-	w.WriteHeader(http.StatusInternalServerError)
-	if err := json.NewEncoder(w).Encode(ErrorResponse{Error: err}); err != nil {
-		log.Err(err).Msg("getDashboardStats encoding error")
+	writeJSON(w, ErrorResponse{Error: err}, http.StatusInternalServerError)
+}
+
+func writeJSON(w http.ResponseWriter, payload any, status ...int) {
+	w.Header().Add("Content-Type", "application/json")
+	if len(status) > 0 {
+		w.WriteHeader(status[0])
 	}
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		log.Err(err).Msg("writeJSON encoding error")
+	}
+}
+
+func writeMessage(w http.ResponseWriter, payload string, status ...int) {
+	msg := map[string]string{
+		"message": payload,
+	}
+
+	writeJSON(w, msg, status...)
 }

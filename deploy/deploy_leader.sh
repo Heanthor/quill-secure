@@ -19,6 +19,7 @@ scp "$(pwd)/leader/quillsecure_prod.yaml" "$LINODE_HOST":/tmp/quillsecure_leader
 ssh "$LINODE_HOST" "sudo mv /tmp/quillsecure_leader_prod.yaml /usr/local/bin/quillsecure/quillsecure_leader.yaml" || die "Failed to copy quillsecure_prod.yaml."
 
 # then copy sources and compile binary
+rm $(pwd)/bin/leader_src.zip
 zip -r bin/leader_src.zip $(git ls-files)
 scp "$(pwd)/bin/leader_src.zip" "$LINODE_HOST":/tmp/src/leader_src.zip || die "Failed to copy leader sources."
 ssh "$LINODE_HOST" "cd /tmp/src && \
@@ -31,10 +32,10 @@ rm /tmp/src/leader_src.zip
 # then restart service, swapping in the new executable
 scp "$(pwd)/deploy/assets/leader.service" "$LINODE_HOST":/etc/systemd/system/leader.service || die "Failed to copy leader service."
 
-ssh "$LINODE_HOST" "(sudo systemctl stop leader.service || true) && \
+ssh "$LINODE_HOST" "sudo systemctl daemon-reload && \
+(sudo systemctl stop leader.service || true) && \
 mv /tmp/leader_new /usr/local/bin/quillsecure/leader && \
 sudo chmod 777 /usr/local/bin/quillsecure/leader && \
-sudo systemctl daemon-reload && \
 sudo systemctl start leader.service
 " || die "Service restart failed."
 

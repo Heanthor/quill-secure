@@ -18,3 +18,7 @@
 
 https://www.digitalocean.com/community/tutorials/how-to-install-go-on-debian-10
 To install go
+
+### Example commands
+`systemctl status leader.service`
+`sudo journalctl -u leader.service | tail -f`
