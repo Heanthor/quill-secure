@@ -42,20 +42,15 @@ type SensorData struct {
 }
 
 // NewLeaderNet returns a new LeaderNet with listener initialized on host and port
-func NewLeaderNet(host string, port, nodePingTimeoutSecs int, db *db.DB) (*LeaderNet, error) {
-	listener, err := net.Listen(ConnType, host+":"+strconv.Itoa(port))
+func NewLeaderNet(port, nodePingTimeoutSecs int, db *db.DB) (*LeaderNet, error) {
+	listener, err := net.Listen(ConnType, ":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, fmt.Errorf("NewLeaderNet error starting listener: %w", err)
-	}
-	ip, err := mynet.ParseHost(host)
-	if err != nil {
-		log.Fatal().Msg("Invalid host parameter")
 	}
 
 	return &LeaderNet{
 		DB: db,
 		dest: mynet.Dest{
-			Host: ip,
 			Port: port,
 		},
 		listener:            listener,
@@ -66,7 +61,7 @@ func NewLeaderNet(host string, port, nodePingTimeoutSecs int, db *db.DB) (*Leade
 }
 
 func (l *LeaderNet) StartListening() error {
-	log.Info().Str("host", l.dest.Host.String()).Int("port", l.dest.Port).Msg("Started listening")
+	log.Info().Int("port", l.dest.Port).Msg("Started listening")
 	go l.nodeAgeWorker()
 	go l.sensorReadoutConsumerWorker()
 
@@ -108,7 +103,7 @@ func (l *LeaderNet) sensorReadoutConsumerWorker() {
 			log.Debug().Msg("Parse fake sensor data")
 		case sensor.TypeAtmospheric:
 			ad := sensor.ParseValidAtmosphericSensorLine(string(sd.data.Data))
-			if err := l.DB.RecordAtmosphericMeasurement(ad); err != nil {
+			if err := l.DB.RecordAtmosphericMeasurement(ad, sd.sensor.DeviceID); err != nil {
 				log.Err(err).Msg("error recording atmospheric measurement")
 			}
 		}

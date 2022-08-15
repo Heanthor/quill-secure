@@ -48,7 +48,10 @@ func main() {
 	setCloseHandler(&sc)
 
 	// find and activate all sensor connected to device
-	sc.RegisterSensors(viper.GetString("sensors.atmospheric.executable"))
+	sc.RegisterSensors(
+		viper.GetString("sensors.atmospheric.executable"),
+		viper.GetInt("sensors.atmospheric.pollFrequencySec"),
+	)
 	// start periodic health ping to leader
 	sc.StartLeaderHealthCheck()
 
@@ -89,6 +92,7 @@ func initConfig() {
 		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("node")
+		viper.AddConfigPath("/usr/local/bin/quillsecure")
 		viper.SetConfigName("quillsecure_node")
 	}
 

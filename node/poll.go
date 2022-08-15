@@ -62,9 +62,9 @@ type sensorErrorWrapper struct {
 	err    error
 }
 
-func (s *SensorCollection) RegisterSensors(atmosphericExecutable string) {
-	s.registerSensor(&sensor.FakeSensor{Buf: "fake data"})
-	s.registerSensor(sensor.NewAtmospheric(atmosphericExecutable))
+func (s *SensorCollection) RegisterSensors(atmosphericExecutable string, atmosphericPollFreq int) {
+	//s.registerSensor(&sensor.FakeSensor{Buf: "fake data"})
+	s.registerSensor(sensor.NewAtmospheric(atmosphericExecutable, atmosphericPollFreq))
 }
 
 func (s *SensorCollection) registerSensor(sn sensor.Sensor) {
@@ -117,7 +117,7 @@ func (s *SensorCollection) StartLeaderHealthCheck() {
 				if err := s.pingLeader(); err != nil {
 					// TODO maybe use a mutex here
 					s.leaderHealthy = false
-					log.Error().Msg("Cannot reach leader node")
+					log.Err(err).Msg("Cannot reach leader node")
 				} else {
 					if s.leaderHealthy == false {
 						log.Info().Msg("Leader node reachable again")

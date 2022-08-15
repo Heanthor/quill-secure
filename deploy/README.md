@@ -21,4 +21,4 @@ To install go
 
 ### Example commands
 `systemctl status leader.service`
-`sudo journalctl -u leader.service | tail -f`
+Tail logs: `sudo journalctl -u leader.service -f`

@@ -3,10 +3,12 @@ deviceID: 1
 pingIntervalSecs: 1
 
 leaderHost: localhost
+#leaderHost: 104.237.150.204
 leaderPort: 5530
 
 packetBufferSize: 1000
 sensors:
   atmospheric:
     executable: venv/bin/python3 sensor/fake_sensor.py
+    pollFrequencySec: 15
 #logFileSuffix: node1

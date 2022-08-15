@@ -30,8 +30,7 @@ func main() {
 	}
 	log.Info().Msg("Database initialized")
 
-	net, err := NewLeaderNet(viper.GetString("leaderHost"),
-		viper.GetInt("leaderPort"),
+	net, err := NewLeaderNet(viper.GetInt("leaderPort"),
 		viper.GetInt("nodePingTimeoutSecs"),
 		d,
 	)
@@ -41,8 +40,9 @@ func main() {
 
 	a := api.NewRouter(d, viper.GetInt("api.dashboardStatsDays"))
 	go func() {
-		log.Info().Msg("API initialized")
-		if err := a.Listen(viper.GetInt("api.port")); err != nil {
+		port := viper.GetInt("api.port")
+		log.Info().Int("port", port).Msg("API initialized")
+		if err := a.Listen(port); err != nil {
 			log.Fatal().Err(err).Msg("Error in API")
 		}
 	}()

@@ -27,6 +27,7 @@ func NewDB(file string) (*DB, error) {
 	if _, err = db.Exec(`
 	create table if not exists readings(
 	    id integer not null primary key,
+	    device_id integer not null,
 	    ts integer not null,
 	    temperature real,
 	    humidity real,
@@ -46,18 +47,20 @@ func (d *DB) Close() {
 	d.db.Close()
 }
 
-func (d *DB) RecordAtmosphericMeasurement(mes sensor.AtmosphericDataLine) error {
+func (d *DB) RecordAtmosphericMeasurement(mes sensor.AtmosphericDataLine, deviceID uint8) error {
 	log.Debug().Interface("data", mes).Msg("db: RecordAtmosphericMeasurement")
 	if _, err := d.db.Exec(`
 	insert into readings(
 	 ts,
+	 device_id,
 	 temperature,
 	 humidity,
 	 pressure,
 	 altitude,
 	 voc_index) values (
-	?, ?, ?, ?, ?, ?
+	?, ?, ?, ?, ?, ?, ?
 	)`, mes.Timestamp.Unix(),
+		deviceID,
 		mes.Temperature,
 		mes.Humidity,
 		mes.Pressure,
@@ -85,6 +88,7 @@ func (d *DB) GetRecentStats(days int) ([]sensor.AtmosphericDataLine, error) {
 		 voc_index
 	 from readings
 	 where ts >= ?
+	 order by ts desc
 	 `, from)
 	if err != nil {
 		return nil, fmt.Errorf("GetRecentStats: failed to get rows: %w", err)

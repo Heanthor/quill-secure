@@ -29,6 +29,7 @@ func NewRouter(db *db.DB, dashboardStatsDays int) *API {
 	a := API{r: r, db: db}
 
 	r.Get("/dashboard/stats", a.getDashboardStats(dashboardStatsDays))
+	r.Get("/", a.easterEgg)
 
 	return &a
 }
@@ -54,6 +55,20 @@ func (a *API) getDashboardStats(dashboardStatsDays int) http.HandlerFunc {
 
 		writeJSON(w, stats)
 	}
+}
+
+func (a *API) easterEgg(w http.ResponseWriter, r *http.Request) {
+	payload := `
+    ____        _ _ _  _____                          
+  / __ \      (_) | |/ ____|                         
+ | |  | |_   _ _| | | (___   ___  ___ _   _ _ __ ___ 
+ | |  | | | | | | | |\___ \ / _ \/ __| | | | '__/ _ \
+ | |__| | |_| | | | |____) |  __/ (__| |_| | | |  __/
+  \___\_\\__,_|_|_|_|_____/ \___|\___|\__,_|_|  \___|
+                                                     
+                                                     
+`
+	w.Write([]byte(payload))
 }
 
 func respondInternalServerError(w http.ResponseWriter, err string) {

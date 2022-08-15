@@ -1,6 +1,7 @@
 package sensor
 
 import (
+	"fmt"
 	"github.com/rs/zerolog/log"
 	"io"
 	"os/exec"
@@ -15,6 +16,7 @@ type AtmosphericSensor struct {
 	sensorProc     *exec.Cmd
 	sensorStdout   io.Reader
 	executablePath string
+	pollFreq       int
 }
 
 type AtmosphericDataLine struct {
@@ -26,9 +28,10 @@ type AtmosphericDataLine struct {
 	VOCIndex    float32   `json:"vocIndex"`
 }
 
-func NewAtmospheric(executable string) *AtmosphericSensor {
+func NewAtmospheric(executable string, sensorPollFreqSec int) *AtmosphericSensor {
 	return &AtmosphericSensor{
 		executablePath: executable,
+		pollFreq:       sensorPollFreqSec,
 	}
 }
 
@@ -47,6 +50,8 @@ func (a *AtmosphericSensor) Ping() error {
 
 func (a *AtmosphericSensor) Init() error {
 	args := strings.Split(a.executablePath, " ")
+	args = append(args, "--poll-frequency="+strconv.Itoa(a.pollFreq))
+	fmt.Println(args)
 	log.Debug().Str("path", a.executablePath).Msg("Atmospheric executable path")
 	cmd := exec.Command(args[0], args[1:]...)
 	a.sensorProc = cmd
@@ -82,19 +87,21 @@ func (a *AtmosphericSensor) Data() (chan Data, chan error) {
 			}
 
 			if n == 0 {
+				time.Sleep(100 * time.Millisecond)
 				continue
 			}
 
-			sensorLine := buf[:n]
-			lm := log.Debug().Str("line", string(sensorLine))
-			if !validateSensorLine(string(sensorLine)) {
+			sensorLine := string(buf[:n])
+			sensorLine = strings.TrimSpace(sensorLine)
+			lm := log.Debug().Str("line", sensorLine)
+			if !validateSensorLine(sensorLine) {
 				lm.Msg("invalid sensor line")
 				continue
 			}
 
 			d := Data{
 				Typ:  a.Type(),
-				Data: sensorLine,
+				Data: []byte(sensorLine),
 			}
 			dataCh <- d
 			lm.Msg("sensor line")
