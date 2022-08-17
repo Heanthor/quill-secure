@@ -56,6 +56,8 @@ sudo systemctl restart nginx
 # TODO this should be moved into another executable!
 scp -r "$(pwd)/../quillsecure-site/build" "$LINODE_HOST":/tmp || die "Failed to upload site."
 
-ssh "$LINODE_HOST" "sudo mv /tmp/build/* /var/www/quillsecure.com" || die "Failed to move site files."
+ssh "$LINODE_HOST" "sudo rm -r /var/www/quillsecure.com && \
+sudo mkdir -p /var/www/quillsecure.com && \
+sudo mv /tmp/build/* /var/www/quillsecure.com" || die "Failed to move site files."
 
 echo "Deployment completed successfully."
