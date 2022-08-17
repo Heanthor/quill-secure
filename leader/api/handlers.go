@@ -5,9 +5,11 @@ import (
 	"github.com/Heanthor/quill-secure/db"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/rs/zerolog/log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type API struct {
@@ -19,6 +21,18 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+type DashboardStatsResponseItem struct {
+	Timestamp   time.Time `json:"timestamp"`
+	Temperature float32   `json:"temperature"`
+	Humidity    float32   `json:"humidity"`
+	Pressure    float32   `json:"pressure"`
+	Altitude    float32   `json:"altitude"`
+	VOCIndex    float32   `json:"vocIndex"`
+
+	UnixTS       int64   `json:"unixTS"`
+	TemperatureF float32 `json:"temperatureF"`
+}
+
 func NewRouter(db *db.DB, dashboardStatsDays int) *API {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -26,12 +40,27 @@ func NewRouter(db *db.DB, dashboardStatsDays int) *API {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	r.Use(cors.Handler(cors.Options{
+		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
+		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
+
 	a := API{r: r, db: db}
 
 	r.Get("/dashboard/stats", a.getDashboardStats(dashboardStatsDays))
-	r.Get("/", a.easterEgg)
+	r.Get("/whoami", a.easterEgg)
 
 	return &a
+}
+
+func (a *API) GetRouter() chi.Router {
+	return a.r
 }
 
 // Listen listens on the router and blocks
@@ -48,12 +77,27 @@ func (a *API) getDashboardStats(dashboardStatsDays int) http.HandlerFunc {
 			return
 		}
 
+		resp := make([]DashboardStatsResponseItem, len(stats))
+		for i, item := range stats {
+			temperatureF := item.Temperature*9/5 + 32
+			resp[i] = DashboardStatsResponseItem{
+				Timestamp:    item.Timestamp,
+				Temperature:  item.Temperature,
+				Humidity:     item.Humidity,
+				Pressure:     item.Pressure,
+				Altitude:     item.Altitude,
+				VOCIndex:     item.VOCIndex,
+				UnixTS:       item.Timestamp.Unix(),
+				TemperatureF: temperatureF,
+			}
+		}
+
 		if len(stats) == 0 {
 			writeMessage(w, "no stats found", http.StatusNotFound)
 			return
 		}
 
-		writeJSON(w, stats)
+		writeJSON(w, resp)
 	}
 }
 

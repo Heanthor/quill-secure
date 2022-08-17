@@ -20,12 +20,12 @@ type AtmosphericSensor struct {
 }
 
 type AtmosphericDataLine struct {
-	Timestamp   time.Time `json:"timestamp"`
-	Temperature float32   `json:"temperature"`
-	Humidity    float32   `json:"humidity"`
-	Pressure    float32   `json:"pressure"`
-	Altitude    float32   `json:"altitude"`
-	VOCIndex    float32   `json:"vocIndex"`
+	Timestamp   time.Time
+	Temperature float32
+	Humidity    float32
+	Pressure    float32
+	Altitude    float32
+	VOCIndex    float32
 }
 
 func NewAtmospheric(executable string, sensorPollFreqSec int) *AtmosphericSensor {

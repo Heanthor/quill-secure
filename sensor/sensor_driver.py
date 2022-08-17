@@ -22,7 +22,11 @@ class SensorDriver:
         self.bme280.sea_level_pressure = 1017.60  # Arlington, VA
 
     def poll(self):
+        print_count = 0
         while True:
+            do_print = print_count % self.poll_freq == 0
+            if do_print:
+                print_count = 0
             temperature = self.bme280.temperature
             relative_humidity = self.bme280.relative_humidity
             pressure = self.bme280.pressure
@@ -39,17 +43,19 @@ class SensorDriver:
                 print("VOC Index: ", voc_index)
 
             ts = int(time.time())
-            sys.stdout.write(f"{ts},{temperature},{relative_humidity},{pressure},{altitude},{voc_index}")
-            sys.stdout.flush()
-            print()
-            time.sleep(self.poll_freq)
+            if do_print:
+                sys.stdout.write(f"{ts},{temperature},{relative_humidity},{pressure},{altitude},{voc_index}")
+                sys.stdout.flush()
+                print()
+            print_count += 1
+            time.sleep(1)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Sensor driver')
     parser.add_argument('--poll-frequency', type=int, default=1,
-                        help='poll frequency in seconds')
-    parser.add_argument('--debug-print', type=bool, default=False,
+                        help='print readings every x seconds. the device polls every 1 second regardless.')
+    parser.add_argument('--debug-print', action='store_true',
                         help='poll frequency in seconds')
 
     args = parser.parse_args()

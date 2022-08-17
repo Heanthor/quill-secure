@@ -5,6 +5,9 @@ dbFile: leader.db
 # number of seconds to wait for a response from a node before declaring it inactive
 nodePingTimeoutSecs: 5
 api:
-  port: 80
+  port: 5529
   dashboardStatsDays: 7
 #logFileSuffix: leader
+
+site:
+  staticSiteRoot: ../quillsecure-site/build

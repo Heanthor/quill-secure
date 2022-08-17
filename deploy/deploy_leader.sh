@@ -12,7 +12,11 @@ if test -z "$LINODE_HOST"; then
   exit 1
 fi
 
-ssh "$LINODE_HOST" "sudo mkdir -p /usr/local/bin/quillsecure && rm -r /tmp/src && sudo mkdir -p /tmp/src && sudo chown quillsecure /usr/local/bin/quillsecure" || die "Failed to create directories"
+ssh "$LINODE_HOST" "sudo mkdir -p /usr/local/bin/quillsecure && \
+rm -r /tmp/src && \
+sudo mkdir -p /tmp/src && \
+sudo mkdir -p /var/www/quillsecure.com && \
+sudo chown quillsecure /usr/local/bin/quillsecure" || die "Failed to create directories"
 
 # first copy config file
 scp "$(pwd)/leader/quillsecure_prod.yaml" "$LINODE_HOST":/tmp/quillsecure_leader_prod.yaml || die "Failed to copy quillsecure_prod.yaml."
@@ -38,5 +42,20 @@ mv /tmp/leader_new /usr/local/bin/quillsecure/leader && \
 sudo chmod 777 /usr/local/bin/quillsecure/leader && \
 sudo systemctl start leader.service
 " || die "Service restart failed."
+
+# configure nginx
+scp "$(pwd)/deploy/assets/nginx.conf" "$LINODE_HOST":/etc/nginx/sites-available/quillsecure.com || die "Failed to upload nginx conf."
+
+ssh "$LINODE_HOST" "
+sudo ln -sf /etc/nginx/sites-available/quillsecure.com /etc/nginx/sites-enabled/ && \
+sudo nginx -t && \
+sudo systemctl restart nginx
+" || die "NGINX configuration failed."
+
+# configure static files
+# TODO this should be moved into another executable!
+scp -r "$(pwd)/../quillsecure-site/build" "$LINODE_HOST":/tmp || die "Failed to upload site."
+
+ssh "$LINODE_HOST" "sudo mv /tmp/build/* /var/www/quillsecure.com" || die "Failed to move site files."
 
 echo "Deployment completed successfully."
