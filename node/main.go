@@ -7,10 +7,12 @@ import (
 	"github.com/Heanthor/quill-secure/boot"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 )
 
@@ -36,6 +38,19 @@ func main() {
 	}
 	// inject deviceID into every log
 	log.Logger = log.With().Uint8("deviceID", deviceID).Logger()
+
+	logLevelStr := viper.GetString("logLevel")
+	if logLevelStr == "" {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		log.Info().Msg("Setting global log level to info")
+	} else {
+		level, err := zerolog.ParseLevel(strings.ToLower(logLevelStr))
+		if err != nil {
+			log.Fatal().Str("level", logLevelStr).Msg("invalid log level")
+		}
+		log.Info().Msgf("Setting global log level to %s", level.String())
+		zerolog.SetGlobalLevel(level)
+	}
 
 	log.Info().Msg("QuillSecure Node booting...")
 	gob.Register(sensor.Data{})

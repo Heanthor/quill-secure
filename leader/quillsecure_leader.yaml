@@ -1,4 +1,6 @@
 prettyLogging: true
+logLevel: debug
+
 leaderPort: 5530
 
 dbFile: leader.db

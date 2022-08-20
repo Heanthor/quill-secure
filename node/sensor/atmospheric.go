@@ -1,7 +1,6 @@
 package sensor
 
 import (
-	"fmt"
 	"github.com/rs/zerolog/log"
 	"io"
 	"os/exec"
@@ -51,7 +50,6 @@ func (a *AtmosphericSensor) Ping() error {
 func (a *AtmosphericSensor) Init() error {
 	args := strings.Split(a.executablePath, " ")
 	args = append(args, "--poll-frequency="+strconv.Itoa(a.pollFreq))
-	fmt.Println(args)
 	log.Debug().Str("path", a.executablePath).Msg("Atmospheric executable path")
 	cmd := exec.Command(args[0], args[1:]...)
 	a.sensorProc = cmd

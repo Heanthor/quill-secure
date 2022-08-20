@@ -3,6 +3,7 @@
 ## Create user
 `sudo useradd quillsecure`
 `sudo apt-get install sqlite`
+`sudo systemctl enable node`
 
 ## Create service
 
@@ -15,6 +16,8 @@
 `sudo apt-get install unzip`
 
 `sudo apt-get install git`
+
+`sudo systemctl enable leader`
 
 https://www.digitalocean.com/community/tutorials/how-to-install-go-on-debian-10
 To install go

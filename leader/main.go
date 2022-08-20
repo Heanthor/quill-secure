@@ -8,10 +8,12 @@ import (
 	"github.com/Heanthor/quill-secure/leader/api"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 )
 
@@ -21,6 +23,20 @@ var (
 
 func main() {
 	initConfig()
+
+	logLevelStr := viper.GetString("logLevel")
+	if logLevelStr == "" {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		log.Info().Msg("Setting global log level to info")
+	} else {
+		level, err := zerolog.ParseLevel(strings.ToLower(logLevelStr))
+		if err != nil {
+			log.Fatal().Str("level", logLevelStr).Msg("invalid log level")
+		}
+		log.Info().Msgf("Setting global log level to %s", level.String())
+		zerolog.SetGlobalLevel(level)
+	}
+
 	log.Info().Msg("QuillSecure Leader booting...")
 	gob.Register(sensor.Data{})
 

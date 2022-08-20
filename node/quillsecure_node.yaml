@@ -1,5 +1,8 @@
-prettyLogging: true
 deviceID: 1
+
+prettyLogging: true
+logLevel: debug
+
 pingIntervalSecs: 1
 
 leaderHost: localhost
