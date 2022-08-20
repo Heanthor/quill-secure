@@ -19,9 +19,8 @@
 https://www.digitalocean.com/community/tutorials/how-to-install-go-on-debian-10
 To install go
 
-## NGINX setup
-https://www.linode.com/docs/guides/how-to-install-and-use-nginx-on-ubuntu-20-04/
-`sudo unlink /etc/nginx/sites-enabled/default`
+## Caddy setup
+https://caddyserver.com/docs/install#debian-ubuntu-raspbian
 
 ### Example commands
 `systemctl status leader.service`

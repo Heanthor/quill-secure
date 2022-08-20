@@ -16,6 +16,7 @@ ssh "$LINODE_HOST" "sudo mkdir -p /usr/local/bin/quillsecure && \
 rm -r /tmp/src && \
 sudo mkdir -p /tmp/src && \
 sudo mkdir -p /var/www/quillsecure.com && \
+sudo mkdir -p /etc/caddy && \
 sudo chown quillsecure /usr/local/bin/quillsecure" || die "Failed to create directories"
 
 # first copy config file
@@ -43,14 +44,14 @@ sudo chmod 777 /usr/local/bin/quillsecure/leader && \
 sudo systemctl start leader.service
 " || die "Service restart failed."
 
-# configure nginx
-scp "$(pwd)/deploy/assets/nginx.conf" "$LINODE_HOST":/etc/nginx/sites-available/quillsecure.com || die "Failed to upload nginx conf."
+# configure caddy
+caddy fmt -overwrite "$(pwd)/deploy/assets/Caddyfile"
+scp "$(pwd)/deploy/assets/Caddyfile" "$LINODE_HOST":/etc/caddy/Caddyfile || die "Failed to upload Caddyfile"
 
-ssh "$LINODE_HOST" "
-sudo ln -sf /etc/nginx/sites-available/quillsecure.com /etc/nginx/sites-enabled/ && \
-sudo nginx -t && \
-sudo systemctl restart nginx
-" || die "NGINX configuration failed."
+ssh "$LINODE_HOST" "cd /etc/caddy && \
+sudo caddy validate
+sudo caddy reload
+" || die "Caddy configuration failed."
 
 # configure static files
 # TODO this should be moved into another executable!

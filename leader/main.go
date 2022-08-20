@@ -6,7 +6,6 @@ import (
 	"github.com/Heanthor/quill-secure/boot"
 	"github.com/Heanthor/quill-secure/db"
 	"github.com/Heanthor/quill-secure/leader/api"
-	"github.com/Heanthor/quill-secure/leader/site"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog/log"
@@ -40,8 +39,6 @@ func main() {
 	}
 
 	a := api.NewRouter(d, viper.GetInt("api.dashboardStatsDays"))
-	fs := site.NewFileserver(a.GetRouter(), viper.GetString("site.staticSiteRoot"))
-	fs.FileRoutes("/")
 	go func() {
 		port := viper.GetInt("api.port")
 		log.Info().Int("port", port).Msg("API initialized")

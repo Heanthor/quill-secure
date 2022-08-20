@@ -1,0 +1,9 @@
+quillsecure.com {
+	root * /var/www/quillsecure.com
+	file_server
+	reverse_proxy /api/* 127.0.0.1:5529
+}
+
+www.quillsecure.com {
+	redir https://quillsecure.com{uri}
+}

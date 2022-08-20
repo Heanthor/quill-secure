@@ -8,6 +8,3 @@ api:
   port: 5529
   dashboardStatsDays: 7
 #logFileSuffix: leader
-
-site:
-  staticSiteRoot: ../quillsecure-site/build

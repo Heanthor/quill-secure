@@ -42,9 +42,9 @@ func NewRouter(db *db.DB, dashboardStatsDays int) *API {
 
 	r.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"https://*", "http://*"},
+		AllowedOrigins: []string{"https://quillsecure.com", "https://www.quillsecure.com"},
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
@@ -53,7 +53,10 @@ func NewRouter(db *db.DB, dashboardStatsDays int) *API {
 
 	a := API{r: r, db: db}
 
-	r.Get("/dashboard/stats", a.getDashboardStats(dashboardStatsDays))
+	r.Route("/api", func(r chi.Router) {
+		r.Get("/dashboard/stats", a.getDashboardStats(dashboardStatsDays))
+	})
+
 	r.Get("/whoami", a.easterEgg)
 
 	return &a
@@ -70,7 +73,11 @@ func (a *API) Listen(port int) error {
 
 func (a *API) getDashboardStats(dashboardStatsDays int) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		stats, err := a.db.GetRecentStats(dashboardStatsDays)
+		days, err := strconv.Atoi(r.URL.Query().Get("days"))
+		if err != nil {
+			days = dashboardStatsDays
+		}
+		stats, err := a.db.GetRecentStats(days)
 		if err != nil {
 			log.Err(err).Msg("getDashboardStats db error")
 			respondInternalServerError(w, err.Error())
