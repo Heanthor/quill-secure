@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"github.com/Heanthor/quill-secure/db"
+	"github.com/Heanthor/quill-secure/leader/net"
+	"github.com/Heanthor/quill-secure/model"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -13,13 +15,16 @@ import (
 )
 
 type API struct {
-	r  chi.Router
-	db *db.DB
+	r           chi.Router
+	db          *db.DB
+	activeNodes net.ActiveNodesFunc
 }
 
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+type H map[string]interface{}
 
 type DashboardStatsResponseItem struct {
 	Timestamp   time.Time `json:"timestamp"`
@@ -33,16 +38,20 @@ type DashboardStatsResponseItem struct {
 	TemperatureF float32 `json:"temperatureF"`
 }
 
-func NewRouter(db *db.DB, dashboardStatsDays int) *API {
+func NewRouter(env string, db *db.DB, activeNodes net.ActiveNodesFunc, dashboardStatsDays int) *API {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
+	origins := []string{"https://quillsecure.com", "https://www.quillsecure.com"}
+	if env == model.EnvLocal {
+		origins = append(origins, "http://*")
+	}
 	r.Use(cors.Handler(cors.Options{
 		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"https://quillsecure.com", "https://www.quillsecure.com"},
+		AllowedOrigins: origins,
 		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
 		AllowedMethods:   []string{"GET", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
@@ -51,10 +60,13 @@ func NewRouter(db *db.DB, dashboardStatsDays int) *API {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	a := API{r: r, db: db}
+	a := API{r: r, db: db, activeNodes: activeNodes}
 
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/dashboard/stats", a.getDashboardStats(dashboardStatsDays))
+		r.Route("/dashboard", func(r chi.Router) {
+			r.Get("/stats", a.getDashboardStats(dashboardStatsDays))
+			r.Get("/sensorsConnected", a.getSensorsConnected)
+		})
 	})
 
 	r.Get("/whoami", a.easterEgg)
@@ -69,6 +81,10 @@ func (a *API) GetRouter() chi.Router {
 // Listen listens on the router and blocks
 func (a *API) Listen(port int) error {
 	return http.ListenAndServe(":"+strconv.Itoa(port), a.r)
+}
+
+func (a *API) getSensorsConnected(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, H{"activeSensors": a.activeNodes()})
 }
 
 func (a *API) getDashboardStats(dashboardStatsDays int) http.HandlerFunc {
@@ -137,7 +153,7 @@ func writeJSON(w http.ResponseWriter, payload any, status ...int) {
 }
 
 func writeMessage(w http.ResponseWriter, payload string, status ...int) {
-	msg := map[string]string{
+	msg := H{
 		"message": payload,
 	}
 

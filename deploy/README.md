@@ -5,8 +5,8 @@
 `sudo apt-get install sqlite`
 `sudo systemctl enable node`
 
-## Create service
-
+## Node
+`libcamera-vid -t 0 --codec libav --libav-format mpegts -o "udp://192.168.0.26:9997"`
 
 ## Leader
 `sudo apt-get install gcc`

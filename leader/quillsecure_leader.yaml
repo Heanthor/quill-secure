@@ -1,3 +1,5 @@
+env: local
+
 prettyLogging: true
 logLevel: debug
 

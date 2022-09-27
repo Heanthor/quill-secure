@@ -1,4 +1,4 @@
-package main
+package net
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -20,12 +21,13 @@ type LeaderNet struct {
 
 	dest                mynet.Dest
 	listener            net.Listener
-	activeNodes         map[uint8]remoteNode
+	seenNodes           map[uint8]remoteNode
 	nodePingTimeoutSecs int
 
 	closing bool
 
 	datapoints chan SensorData
+	nodeLock   sync.Mutex
 }
 
 type remoteNode struct {
@@ -55,7 +57,7 @@ func NewLeaderNet(port, nodePingTimeoutSecs int, db *db.DB) (*LeaderNet, error) 
 		},
 		listener:            listener,
 		datapoints:          make(chan SensorData, 100),
-		activeNodes:         make(map[uint8]remoteNode),
+		seenNodes:           make(map[uint8]remoteNode),
 		nodePingTimeoutSecs: nodePingTimeoutSecs,
 	}, nil
 }
@@ -81,20 +83,43 @@ func (l *LeaderNet) StartListening() error {
 	}
 }
 
+type ActiveNodesFunc func() int
+
+// ActiveNodesFunc returns a function which counts the number of nodes currently connected and sending data to leader.
+// If a node has previously connected, but is not currently active in sending data, it is not counted.
+func (l *LeaderNet) ActiveNodesFunc() ActiveNodesFunc {
+	return func() int {
+		l.nodeLock.Lock()
+		defer l.nodeLock.Unlock()
+
+		count := 0
+		for _, n := range l.seenNodes {
+			if n.Active {
+				count++
+			}
+		}
+
+		return count
+	}
+}
+
 // nodeAgeWorker blocks and checks time since last ping from all connected sensors, marking inactive if they have gone silent
 func (l *LeaderNet) nodeAgeWorker() {
 	t := time.NewTicker(time.Second)
 	for ts := range t.C {
-		for _, sn := range l.activeNodes {
+		l.nodeLock.Lock()
+		for _, sn := range l.seenNodes {
 			if ts.Sub(sn.LastSeenAt) > (time.Second*time.Duration(l.nodePingTimeoutSecs)) && sn.Active {
 				log.Warn().Uint8("deviceID", sn.DeviceID).Msg("Node has gone offline, marking inactive")
 				sn.Active = false
-				l.activeNodes[sn.DeviceID] = sn
+				l.seenNodes[sn.DeviceID] = sn
 			}
 		}
+		l.nodeLock.Unlock()
 	}
 }
 
+// sensorReadoutConsumerWorker listens on l.datapoints and saves/actions on incoming sensor data.
 func (l *LeaderNet) sensorReadoutConsumerWorker() {
 	for {
 		sd := <-l.datapoints
@@ -137,10 +162,14 @@ func (l *LeaderNet) parseIncomingPacket(p *mynet.Packet) {
 	}
 }
 
+// nodeAnnounce handles a node announce packet. This is a periodic ping from each node
+// which signals continued connection with the leader.
 func (l *LeaderNet) nodeAnnounce(p *mynet.Packet) {
-	if entry, ok := l.activeNodes[p.UID]; !ok {
-		log.Info().Uint8("deviceID", p.UID).Str("type", sensor.NameByType(int(p.Typ))).Msg("New node connected")
-		l.activeNodes[p.UID] = remoteNode{
+	l.nodeLock.Lock()
+	defer l.nodeLock.Unlock()
+	if entry, ok := l.seenNodes[p.UID]; !ok {
+		log.Info().Uint8("deviceID", p.UID).Msg("New node connected")
+		l.seenNodes[p.UID] = remoteNode{
 			DeviceID:   p.UID,
 			SensorType: p.Typ,
 			Active:     true,
@@ -151,12 +180,11 @@ func (l *LeaderNet) nodeAnnounce(p *mynet.Packet) {
 		if !entry.Active {
 			log.Info().
 				Uint8("deviceID", p.UID).
-				Str("type", sensor.NameByType(int(p.Typ))).
 				Msg("Previously seen node reconnected")
 			entry.Active = true
 		}
 
-		l.activeNodes[p.UID] = entry
+		l.seenNodes[p.UID] = entry
 	}
 }
 

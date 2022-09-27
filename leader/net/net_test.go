@@ -1,4 +1,4 @@
-package main
+package net
 
 import (
 	mynet "github.com/Heanthor/quill-secure/net"
@@ -40,10 +40,10 @@ func TestLeaderNet_nodeAnnounce(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &LeaderNet{
-				activeNodes: tt.fields.activeSensors,
+				seenNodes: tt.fields.activeSensors,
 			}
 			l.nodeAnnounce(tt.args.p)
-			if l.activeNodes[deviceID].LastSeenAt == time1 {
+			if l.seenNodes[deviceID].LastSeenAt == time1 {
 				t.Fatalf("time not updated")
 			}
 		})

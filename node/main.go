@@ -32,6 +32,10 @@ func main() {
 	flag.Parse()
 
 	initConfig()
+	env := viper.GetString("env")
+	if env == "" {
+		panic("missing 'env' config")
+	}
 	deviceID := uint8(viper.GetInt("deviceID"))
 	if overrideDeviceID != 0 {
 		deviceID = uint8(overrideDeviceID)
@@ -52,7 +56,7 @@ func main() {
 		zerolog.SetGlobalLevel(level)
 	}
 
-	log.Info().Msg("QuillSecure Node booting...")
+	log.Info().Str("env", env).Msg("QuillSecure Node booting...")
 	gob.Register(sensor.Data{})
 
 	sc := NewSensorCollection(deviceID,

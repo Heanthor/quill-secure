@@ -1,3 +1,4 @@
+env: local
 deviceID: 1
 
 prettyLogging: true

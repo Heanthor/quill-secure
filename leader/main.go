@@ -6,6 +6,7 @@ import (
 	"github.com/Heanthor/quill-secure/boot"
 	"github.com/Heanthor/quill-secure/db"
 	"github.com/Heanthor/quill-secure/leader/api"
+	"github.com/Heanthor/quill-secure/leader/net"
 	"github.com/Heanthor/quill-secure/node/sensor"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rs/zerolog"
@@ -24,6 +25,10 @@ var (
 func main() {
 	initConfig()
 
+	env := viper.GetString("env")
+	if env == "" {
+		panic("missing 'env' config")
+	}
 	logLevelStr := viper.GetString("logLevel")
 	if logLevelStr == "" {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -37,7 +42,7 @@ func main() {
 		zerolog.SetGlobalLevel(level)
 	}
 
-	log.Info().Msg("QuillSecure Leader booting...")
+	log.Info().Str("env", env).Msg("QuillSecure Leader booting...")
 	gob.Register(sensor.Data{})
 
 	d, err := db.NewDB(viper.GetString("dbFile"))
@@ -46,7 +51,7 @@ func main() {
 	}
 	log.Info().Msg("Database initialized")
 
-	net, err := NewLeaderNet(viper.GetInt("leaderPort"),
+	n, err := net.NewLeaderNet(viper.GetInt("leaderPort"),
 		viper.GetInt("nodePingTimeoutSecs"),
 		d,
 	)
@@ -54,7 +59,7 @@ func main() {
 		log.Fatal().Err(err).Msg("Error initializing listener")
 	}
 
-	a := api.NewRouter(d, viper.GetInt("api.dashboardStatsDays"))
+	a := api.NewRouter(env, d, n.ActiveNodesFunc(), viper.GetInt("api.dashboardStatsDays"))
 	go func() {
 		port := viper.GetInt("api.port")
 		log.Info().Int("port", port).Msg("API initialized")
@@ -63,17 +68,17 @@ func main() {
 		}
 	}()
 
-	registerCloseHandler(net, a, d)
+	registerCloseHandler(n, d)
 
 	log.Info().Msg("QuillSecure Leader booted")
 
-	if err := net.StartListening(); err != nil {
-		net.Close()
+	if err := n.StartListening(); err != nil {
+		n.Close()
 		log.Fatal().Err(err).Msg("Error in listener")
 	}
 }
 
-func registerCloseHandler(net *LeaderNet, a *api.API, d *db.DB) {
+func registerCloseHandler(net *net.LeaderNet, d *db.DB) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
