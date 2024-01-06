@@ -46,7 +46,7 @@ sudo systemctl start leader.service
 
 # configure caddy
 caddy fmt -overwrite "$(pwd)/deploy/assets/Caddyfile"
-scp "$(pwd)/deploy/assets/Caddyfile" "$LINODE_HOST":/etc/caddy/Caddyfile || die "Failed to upload Caddyfile"
+scp "$(pwd)/deploy/assets/Caddyfile" "$LINODE_HOST":/etc/caddy/sites/quillsecure.caddy || die "Failed to upload Caddyfile"
 
 ssh "$LINODE_HOST" "cd /etc/caddy && \
 sudo caddy validate
